@@ -5,7 +5,7 @@ if (-not $isAdmin) {
     exit
 }
 
-Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
+Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Windows.Forms
 
 # 2. XAML-РАЗМЕТКА ИНТЕРФЕЙСА
 [xml]$xaml = @"
@@ -62,7 +62,6 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
             <RowDefinition Height="35"/>
         </Grid.RowDefinitions>
 
-        <!-- Шапка -->
         <Border Grid.Row="0" Background="#131622" BorderBrush="#1F2438" BorderThickness="0,0,0,1">
             <Grid Margin="20,0">
                 <TextBlock Text="SYSTEM HUB // TWEAKER" VerticalAlignment="Center" FontSize="18" FontWeight="Bold" Foreground="#818CF8"/>
@@ -73,10 +72,8 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
             </Grid>
         </Border>
 
-        <!-- Вкладка 1: Информация, Сеть, Питание -->
         <ScrollViewer Name="TabSystem" Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="20,15,20,10">
             <StackPanel>
-                <!-- Блок Питания -->
                 <Border Style="{StaticResource Card}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -91,7 +88,6 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
                     </Grid>
                 </Border>
 
-                <!-- Блок ПК железа -->
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
                         <Grid Margin="0,0,0,10">
@@ -117,7 +113,6 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
                     </StackPanel>
                 </Border>
 
-                <!-- Блок Сети -->
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
                         <TextBlock Text="Сетевые данные и Скорость" FontSize="14" FontWeight="Bold" Margin="0,0,0,10" Foreground="#F1F5F9"/>
@@ -138,7 +133,6 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
 
                         <Separator Background="#23283C" Margin="0,5,0,10"/>
 
-                        <!-- Спидтест -->
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -157,7 +151,6 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Вкладка 2: Программы -->
         <ScrollViewer Name="TabApps" Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="20,15,20,10" Visibility="Collapsed">
             <StackPanel>
                 <TextBlock Text="Быстрая установка программ" FontSize="15" FontWeight="Bold" Margin="0,0,0,15" Foreground="#F1F5F9"/>
@@ -226,7 +219,6 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Статус-бар -->
         <Border Grid.Row="2" Background="#0C0E15" BorderBrush="#1F2438" BorderThickness="0,1,0,0" Padding="20,0">
             <Grid VerticalAlignment="Center">
                 <TextBlock Name="TxtStatusBar" Text="Система готова к работе" FontSize="12" Foreground="#64748B"/>
@@ -250,15 +242,15 @@ $controls = @(
     "BtnInstallVSCode", "BtnInstallSteam", "BtnInstallDiscord",
     "BtnInstallTelegram", "BtnInstallRiot", "BtnInstallQBit", "TxtStatusBar"
 )
-foreach ($c in $controls) { 
-    Set-Variable -Name $c -Value $window.FindName($c) 
+foreach ($c in $controls) {
+    Set-Variable -Name $c -Value $window.FindName($c)
 }
 
 # Глобальные переменные для спидтеста
 $script:SpeedTestCancelled = $false
 $script:WebClient = $null
 
-# Вкладки
+# --- Вкладки ---
 $TabBtnSystem.Add_Click({
     $TabSystem.Visibility = "Visible"
     $TabApps.Visibility = "Collapsed"
@@ -268,7 +260,7 @@ $TabBtnApps.Add_Click({
     $TabApps.Visibility = "Visible"
 })
 
-# План питания
+# --- План питания ---
 function Update-PowerPlanDisplay {
     $planOutput = powercfg /getactivescheme
     if ($planOutput -match '\((.+?)\)') {
@@ -276,6 +268,8 @@ function Update-PowerPlanDisplay {
         $LblPowerPlan.Text = "Текущий план: $activePlan"
         if ($activePlan -like "*Ultimate*" -or $activePlan -like "*Максимальная*") {
             $LblPowerPlan.Foreground = [System.Windows.Media.Brushes]::LightGreen
+        } else {
+            $LblPowerPlan.Foreground = [System.Windows.Media.Brushes]::LightGray
         }
     }
 }
@@ -284,13 +278,15 @@ Update-PowerPlanDisplay
 $BtnEnableUltimate.Add_Click({
     $TxtStatusBar.Text = "Попытка активации схемы Ultimate Performance..."
     powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 | Out-Null
-    
+
     $plans = powercfg /list
     $targetGuid = $null
     foreach ($line in ($plans -split "`n")) {
-        if ($line -match "GUID:\s+([a-f0-9\-]+).*(Ultimate Performance|Максимальная производительность)") {
-            $targetGuid =$matches[1]
-            break
+        if (($line -match "Ultimate Performance") -or ($line -match "Максимальная производительность")) {
+            if ($line -match "GUID:\s+([a-f0-9\-]+)") {
+                $targetGuid = $matches[1]
+                break
+            }
         }
     }
 
@@ -305,26 +301,30 @@ $BtnEnableUltimate.Add_Click({
     }
 })
 
-# Сбор характеристик ПК
-$BtnScanHardware.Add_Click({$TxtStatusBar.Text = "Сбор информации о системе..."
-    
-    $cpu = Get-CimInstance Win32_Processor \vert{} Select-Object -First 1$TxtCpu.Text = "CPU: $($cpu.Name)"
+# --- Сбор характеристик ПК ---
+$BtnScanHardware.Add_Click({
+    $TxtStatusBar.Text = "Сбор информации о системе..."
 
-    $gpus = (Get-CimInstance Win32_VideoController \vert{} ForEach-Object {$_.Name }) -join " / "
+    $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
+    $TxtCpu.Text = "CPU: $($cpu.Name)"
+
+    $gpus = (Get-CimInstance Win32_VideoController | ForEach-Object { $_.Name }) -join " / "
     $TxtGpu.Text = "GPU: $gpus"
 
-    $bb = Get-CimInstance Win32_BaseBoard$TxtBoard.Text = "Плата: $($bb.Manufacturer) $($bb.Product)"
+    $bb = Get-CimInstance Win32_BaseBoard
+    $TxtBoard.Text = "Плата: $($bb.Manufacturer) $($bb.Product)"
 
     $ramSticks = Get-CimInstance Win32_PhysicalMemory
     $totalRamGb = [math]::Round(($ramSticks | Measure-Object -Property Capacity -Sum).Sum / 1GB, 1)
     $maxSpeed = ($ramSticks | Measure-Object -Property Speed -Maximum).Maximum
     $TxtRam.Text = "ОЗУ: $totalRamGb GB (Частота: $maxSpeed MHz)"
 
-    $virt =$cpu.VirtualizationFirmwareEnabled
+    $virt = $cpu.VirtualizationFirmwareEnabled
     $TxtVirt.Text = "Виртуализация: $(if ($virt) { 'Включена (OK)' } else { 'Отключена' })"
 
     try {
-        $sb = Confirm-SecureBootUEFI$TxtSecureBoot.Text = "Secure Boot: $(if ($sb) { 'Включен (OK)' } else { 'Выключен' })"
+        $sb = Confirm-SecureBootUEFI
+        $TxtSecureBoot.Text = "Secure Boot: $(if ($sb) { 'Включен (OK)' } else { 'Выключен' })"
     } catch {
         $TxtSecureBoot.Text = "Secure Boot: Legacy / Не поддерживается"
     }
@@ -332,10 +332,11 @@ $BtnScanHardware.Add_Click({$TxtStatusBar.Text = "Сбор информации 
     $TxtStatusBar.Text = "Характеристики ПК успешно обновлены."
 })
 
-# Проверка IP
-$BtnCheckIp.Add_Click({$TxtStatusBar.Text = "Определение IP и геолокации..."
+# --- Проверка IP ---
+$BtnCheckIp.Add_Click({
+    $TxtStatusBar.Text = "Определение IP и геолокации..."
     try {
-        $ipInfo = Invoke-RestMethod -Uri "https://ipapi.co/json/" -TimeoutSec 5
+        $ipInfo = Invoke-RestMethod -Uri "https://ipapi.co/json/" -TimeoutSec 8
         $TxtIp.Text = "IP: $($ipInfo.ip)"
         $TxtLocation.Text = "Локация: $($ipInfo.country_name), $($ipInfo.city)"
         $TxtIsp.Text = "Провайдер: $($ipInfo.org)"
@@ -345,8 +346,13 @@ $BtnCheckIp.Add_Click({$TxtStatusBar.Text = "Определение IP и гео
     }
 })
 
-# Замер скорости
-$BtnStartSpeed.Add_Click({$script:SpeedTestCancelled = $false$BtnStartSpeed.IsEnabled = $false$BtnStopSpeed.IsEnabled = $true$PbSpeed.IsIndeterminate = $true$TxtSpeed.Text = "Загрузка тестового блока..."
+# --- Замер скорости ---
+$BtnStartSpeed.Add_Click({
+    $script:SpeedTestCancelled = $false
+    $BtnStartSpeed.IsEnabled = $false
+    $BtnStopSpeed.IsEnabled = $true
+    $PbSpeed.IsIndeterminate = $true
+    $TxtSpeed.Text = "Загрузка тестового блока..."
     $TxtStatusBar.Text = "Тестирование скорости..."
 
     $testUrl = "https://speed.cloudflare.com/__down?bytes=50000000"
@@ -356,63 +362,71 @@ $BtnStartSpeed.Add_Click({$script:SpeedTestCancelled = $false$BtnStartSpeed.IsEn
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
     try {
-        $task =$script:WebClient.DownloadFileTaskAsync($testUrl,$tempFile)
+        $task = $script:WebClient.DownloadFileTaskAsync($testUrl, $tempFile)
         while (-not $task.IsCompleted) {
-            if ($script:SpeedTestCancelled) { 
-                break 
+            if ($script:SpeedTestCancelled) {
+                break
             }
-            [System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke([Action]{}, [System.Windows.Threading.DispatcherPriority]::Background)
-            Start-Sleep -Milliseconds 100
+            [System.Windows.Forms.Application]::DoEvents()
+            Start-Sleep -Milliseconds 50
         }
 
         $stopwatch.Stop()
-        $PbSpeed.IsIndeterminate =$false
+        $PbSpeed.IsIndeterminate = $false
 
-        if ($script:SpeedTestCancelled) {$TxtSpeed.Text = "Замер скорости отменен."
+        if ($script:SpeedTestCancelled) {
+            $TxtSpeed.Text = "Замер скорости отменен."
             $TxtStatusBar.Text = "Тест скорости остановлен."
         } else {
-            $fileSizeBits = (Get-Item$tempFile).Length * 8
-            $seconds =$stopwatch.Elapsed.TotalSeconds
+            $fileSizeBits = (Get-Item $tempFile).Length * 8
+            $seconds = $stopwatch.Elapsed.TotalSeconds
+            if ($seconds -le 0) { $seconds = 0.001 }
             $mbps = [math]::Round(($fileSizeBits / $seconds) / 1Mb, 2)
             $TxtSpeed.Text = "Скорость загрузки: $mbps Mbps"
             $TxtStatusBar.Text = "Тест скорости завершен."
         }
     } catch {
-        $PbSpeed.IsIndeterminate = $false$TxtSpeed.Text = "Ошибка замера или отмена."
+        $PbSpeed.IsIndeterminate = $false
+        $TxtSpeed.Text = "Ошибка замера или отмена."
+        $TxtStatusBar.Text = "Сбой при тесте скорости."
     } finally {
-        if (Test-Path $tempFile) { 
-            Remove-Item $tempFile -Force -ErrorAction SilentlyContinue 
+        if (Test-Path $tempFile) {
+            Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
         }
-        $BtnStartSpeed.IsEnabled =$true
-        $BtnStopSpeed.IsEnabled =$false
-        if ($script:WebClient) {$script:WebClient.Dispose() 
+        $BtnStartSpeed.IsEnabled = $true
+        $BtnStopSpeed.IsEnabled = $false
+        if ($script:WebClient) {
+            $script:WebClient.Dispose()
+            $script:WebClient = $null
         }
     }
 })
 
 $BtnStopSpeed.Add_Click({
-    $script:SpeedTestCancelled =$true
-    if ($script:WebClient) {$script:WebClient.CancelAsync()
+    $script:SpeedTestCancelled = $true
+    if ($script:WebClient) {
+        try { $script:WebClient.CancelAsync() } catch {}
     }
 })
 
-# Установка ПО
-function Install-AppWinget ($id,$name) {
+# --- Установка ПО через winget ---
+function Install-AppWinget ($id, $name) {
     $TxtStatusBar.Text = "Запуск установки $name..."
-    Start-Process powershell.exe -ArgumentList "-NoProfile -Command `"winget install --id $id -e --silent --accept-package-agreements --accept-source-agreements; Write-Host 'Завершено!'; Start-Sleep -Seconds 2`""
+    Start-Process powershell.exe -ArgumentList "-NoProfile -Command `"winget install --id $id -e --silent --accept-package-agreements --accept-source-agreements; Write-Host 'Готово! Нажмите Enter для закрытия...'; Read-Host`""
 }
 
-$BtnInstallVSCode.Add_Click({ Install-AppWinget "Microsoft.VisualStudioCode" "VS Code" })
-$BtnInstallSteam.Add_Click({ Install-AppWinget "Valve.Steam" "Steam" })
-$BtnInstallDiscord.Add_Click({ Install-AppWinget "Discord.Discord" "Discord" })
+$BtnInstallVSCode.Add_Click({   Install-AppWinget "Microsoft.VisualStudioCode" "VS Code" })
+$BtnInstallSteam.Add_Click({    Install-AppWinget "Valve.Steam" "Steam" })
+$BtnInstallDiscord.Add_Click({  Install-AppWinget "Discord.Discord" "Discord" })
 $BtnInstallTelegram.Add_Click({ Install-AppWinget "Telegram.TelegramDesktop" "Telegram" })
-$BtnInstallRiot.Add_Click({ Install-AppWinget "RiotGames.RiotClient" "Riot Client" })
+$BtnInstallRiot.Add_Click({     Install-AppWinget "RiotGames.RiotClient" "Riot Client" })
 
-$BtnInstallQBit.Add_Click({$TxtStatusBar.Text = "Скачивание qBittorrent..."
+$BtnInstallQBit.Add_Click({
+    $TxtStatusBar.Text = "Скачивание qBittorrent..."
     $url = "https://sourceforge.net/projects/qbittorrent/files/latest/download"
     $outFile = "$env:TEMP\qbittorrent_setup.exe"
     try {
-        Invoke-WebRequest -Uri $url -OutFile$outFile -UserAgent "Mozilla/5.0"
+        Invoke-WebRequest -Uri $url -OutFile $outFile -UserAgent "Mozilla/5.0" -MaximumRedirection 10
         $TxtStatusBar.Text = "Запуск инсталлятора qBittorrent..."
         Start-Process -FilePath $outFile
     } catch {
@@ -420,10 +434,10 @@ $BtnInstallQBit.Add_Click({$TxtStatusBar.Text = "Скачивание qBittorren
     }
 })
 
-# Первоначальный опрос железа при показе окна
+# --- Автозапуск сканирования при открытии окна ---
 $window.Add_ContentRendered({
     $BtnScanHardware.RaiseEvent((New-Object System.Windows.RoutedEventArgs($Button.ClickEvent)))
 })
 
-# Отображение окна
+# --- Показ окна ---
 $window.ShowDialog() | Out-Null
