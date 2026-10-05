@@ -1,18 +1,13 @@
-<#
-.SYNOPSIS
-    Ultimate System Utility & Tweaker (WPF + PowerShell)
-#>
-
-# 1. ПРОВЕРКА И ПЕРЕЗАПУСК С ПРАВАМИ АДМИНИСТРАТОРА
-$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
+# 1. ПРОВЕРКА ПРАВ АДМИНИСТРАТОРА
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"irm https://raw.githubusercontent.com/TipOk1125/my-tweaker/refs/heads/main/app.ps1 | iex`"" -Verb RunAs
     exit
 }
 
-Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing
+Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
 
-# 2. XAML-РАЗМЕТКА ИНТЕРФЕЙСА (WPF)
+# 2. XAML-РАЗМЕТКА ИНТЕРФЕЙСА
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -21,7 +16,6 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
         FontFamily="Segoe UI" ResizeMode="CanMinimize">
 
     <Window.Resources>
-        <!-- Стилизация кнопок со скруглениями -->
         <Style TargetType="Button">
             <Setter Property="Background" Value="#1E2235"/>
             <Setter Property="Foreground" Value="#F8FAFC"/>
@@ -51,7 +45,6 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
             </Setter>
         </Style>
 
-        <!-- Стили карточек -->
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background" Value="#161926"/>
             <Setter Property="CornerRadius" Value="14"/>
@@ -117,7 +110,7 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
                             </StackPanel>
                             <StackPanel Grid.Column="1">
                                 <TextBlock Name="TxtRam" Text="ОЗУ: Сканирование..." Margin="0,3" Foreground="#CBD5E1"/>
-                                <TextBlock Name="TxtVirt" Text="Виртуализация (SVM/VT-x): ..." Margin="0,3" Foreground="#CBD5E1"/>
+                                <TextBlock Name="TxtVirt" Text="Виртуализация: ..." Margin="0,3" Foreground="#CBD5E1"/>
                                 <TextBlock Name="TxtSecureBoot" Text="Secure Boot: ..." Margin="0,3" Foreground="#CBD5E1"/>
                             </StackPanel>
                         </Grid>
@@ -170,18 +163,16 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
                 <TextBlock Text="Быстрая установка программ" FontSize="15" FontWeight="Bold" Margin="0,0,0,15" Foreground="#F1F5F9"/>
 
                 <UniformGrid Columns="2">
-                    <!-- VS Code -->
                     <Border Style="{StaticResource Card}" Margin="5">
                         <DockPanel>
                             <Button Name="BtnInstallVSCode" Content="Установить" DockPanel.Dock="Right" VerticalAlignment="Center"/>
                             <StackPanel>
                                 <TextBlock Text="Visual Studio Code" FontWeight="Bold" Foreground="#F8FAFC"/>
-                                <TextBlock Text="Редактор кода и скриптов" FontSize="11" Foreground="#94A3B8"/>
+                                <TextBlock Text="Редактор кода" FontSize="11" Foreground="#94A3B8"/>
                             </StackPanel>
                         </DockPanel>
                     </Border>
 
-                    <!-- Steam -->
                     <Border Style="{StaticResource Card}" Margin="5">
                         <DockPanel>
                             <Button Name="BtnInstallSteam" Content="Установить" DockPanel.Dock="Right" VerticalAlignment="Center"/>
@@ -192,18 +183,16 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
                         </DockPanel>
                     </Border>
 
-                    <!-- Discord -->
                     <Border Style="{StaticResource Card}" Margin="5">
                         <DockPanel>
                             <Button Name="BtnInstallDiscord" Content="Установить" DockPanel.Dock="Right" VerticalAlignment="Center"/>
                             <StackPanel>
                                 <TextBlock Text="Discord" FontWeight="Bold" Foreground="#F8FAFC"/>
-                                <TextBlock Text="Голосовой и текстовый чат" FontSize="11" Foreground="#94A3B8"/>
+                                <TextBlock Text="Голосовой чат" FontSize="11" Foreground="#94A3B8"/>
                             </StackPanel>
                         </DockPanel>
                     </Border>
 
-                    <!-- Telegram -->
                     <Border Style="{StaticResource Card}" Margin="5">
                         <DockPanel>
                             <Button Name="BtnInstallTelegram" Content="Установить" DockPanel.Dock="Right" VerticalAlignment="Center"/>
@@ -214,24 +203,22 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
                         </DockPanel>
                     </Border>
 
-                    <!-- Riot Client -->
                     <Border Style="{StaticResource Card}" Margin="5">
                         <DockPanel>
                             <Button Name="BtnInstallRiot" Content="Установить" DockPanel.Dock="Right" VerticalAlignment="Center"/>
                             <StackPanel>
                                 <TextBlock Text="Riot Games Client" FontWeight="Bold" Foreground="#F8FAFC"/>
-                                <TextBlock Text="Valorant, LoL и др." FontSize="11" Foreground="#94A3B8"/>
+                                <TextBlock Text="Игровой клиент Riot" FontSize="11" Foreground="#94A3B8"/>
                             </StackPanel>
                         </DockPanel>
                     </Border>
 
-                    <!-- qBittorrent -->
                     <Border Style="{StaticResource Card}" Margin="5">
                         <DockPanel>
                             <Button Name="BtnInstallQBit" Content="Скачать и Запустить" DockPanel.Dock="Right" VerticalAlignment="Center"/>
                             <StackPanel>
                                 <TextBlock Text="qBittorrent" FontWeight="Bold" Foreground="#F8FAFC"/>
-                                <TextBlock Text="Торрент-клиент (SourceForge)" FontSize="11" Foreground="#94A3B8"/>
+                                <TextBlock Text="SourceForge релиз" FontSize="11" Foreground="#94A3B8"/>
                             </StackPanel>
                         </DockPanel>
                     </Border>
@@ -239,7 +226,7 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Статус-бар внизу -->
+        <!-- Статус-бар -->
         <Border Grid.Row="2" Background="#0C0E15" BorderBrush="#1F2438" BorderThickness="0,1,0,0" Padding="20,0">
             <Grid VerticalAlignment="Center">
                 <TextBlock Name="TxtStatusBar" Text="Система готова к работе" FontSize="12" Foreground="#64748B"/>
@@ -249,7 +236,7 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
 </Window>
 "@
 
-# 3. ИНИЦИАЛИЗАЦИЯ WPF ЭЛЕМЕНТОВ
+# 3. ИНИЦИАЛИЗАЦИЯ WPF
 $reader = (New-Object System.Xml.XmlNodeReader $xaml)
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
@@ -263,14 +250,15 @@ $controls = @(
     "BtnInstallVSCode", "BtnInstallSteam", "BtnInstallDiscord",
     "BtnInstallTelegram", "BtnInstallRiot", "BtnInstallQBit", "TxtStatusBar"
 )
-foreach ($c in $controls) { Set-Variable -Name $c -Value $window.FindName($c) }
+foreach ($c in $controls) { 
+    Set-Variable -Name $c -Value $window.FindName($c) 
+}
 
-# Глобальный флаг для остановки теста скорости
+# Глобальные переменные для спидтеста
 $script:SpeedTestCancelled = $false
+$script:WebClient = $null
 
-# 4. ЛОГИКА И ОБРАБОТЧИКИ
-
-# Переключение вкладок
+# Вкладки
 $TabBtnSystem.Add_Click({
     $TabSystem.Visibility = "Visible"
     $TabApps.Visibility = "Collapsed"
@@ -280,7 +268,7 @@ $TabBtnApps.Add_Click({
     $TabApps.Visibility = "Visible"
 })
 
-# Функция чтения плана питания
+# План питания
 function Update-PowerPlanDisplay {
     $planOutput = powercfg /getactivescheme
     if ($planOutput -match '\((.+?)\)') {
@@ -293,14 +281,10 @@ function Update-PowerPlanDisplay {
 }
 Update-PowerPlanDisplay
 
-# Включение схемы "Максимальная производительность"
 $BtnEnableUltimate.Add_Click({
-    $TxtStatusBar.Text = "Попытка разблокировки схемы питания..."
+    $TxtStatusBar.Text = "Попытка активации схемы Ultimate Performance..."
+    powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 | Out-Null
     
-    # Разблокировка схемы Ultimate Performance через GUID дублирования
-    $dup = powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 2>&1
-    
-    # Поиск GUID плана
     $plans = powercfg /list
     $targetGuid = $null
     foreach ($line in ($plans -split "`n")) {
@@ -313,88 +297,71 @@ $BtnEnableUltimate.Add_Click({
     if ($targetGuid) {
         powercfg /setactive $targetGuid
         Update-PowerPlanDisplay
-        $TxtStatusBar.Text = "Максимальная производительность успешно активирована!"
+        $TxtStatusBar.Text = "Максимальная производительность успешно включена!"
     } else {
-        # Если процессор или система ограничила дублирование, активируем High Performance (Высокая производительность)
         powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
         Update-PowerPlanDisplay
-        $TxtStatusBar.Text = "Включена Высокая производительность (Ultimate заблокирован политикой ОС)."
+        $TxtStatusBar.Text = "Включена Высокая производительность (Ultimate ограничена ОС)."
     }
 })
 
 # Сбор характеристик ПК
-$BtnScanHardware.Add_Click({$TxtStatusBar.Text = "Сбор данных о комплектующих..."
-    $window.Dispatcher.Invoke([Action]{}, [System.Windows.Threading.DispatcherPriority]::Background)
-
-    # Процессор
+$BtnScanHardware.Add_Click({$TxtStatusBar.Text = "Сбор информации о системе..."
+    
     $cpu = Get-CimInstance Win32_Processor \vert{} Select-Object -First 1$TxtCpu.Text = "CPU: $($cpu.Name)"
 
-    # Видеокарта
     $gpus = (Get-CimInstance Win32_VideoController \vert{} ForEach-Object {$_.Name }) -join " / "
     $TxtGpu.Text = "GPU: $gpus"
 
-    # Материнская плата
     $bb = Get-CimInstance Win32_BaseBoard$TxtBoard.Text = "Плата: $($bb.Manufacturer) $($bb.Product)"
 
-    # ОЗУ и частота
     $ramSticks = Get-CimInstance Win32_PhysicalMemory
     $totalRamGb = [math]::Round(($ramSticks | Measure-Object -Property Capacity -Sum).Sum / 1GB, 1)
     $maxSpeed = ($ramSticks | Measure-Object -Property Speed -Maximum).Maximum
     $TxtRam.Text = "ОЗУ: $totalRamGb GB (Частота: $maxSpeed MHz)"
 
-    # Виртуализация
     $virt =$cpu.VirtualizationFirmwareEnabled
-    $TxtVirt.Text = "Виртуализация в BIOS: $(if ($virt) { 'Включена (OK)' } else { 'Отключена' })"
+    $TxtVirt.Text = "Виртуализация: $(if ($virt) { 'Включена (OK)' } else { 'Отключена' })"
 
-    # Secure Boot
     try {
         $sb = Confirm-SecureBootUEFI$TxtSecureBoot.Text = "Secure Boot: $(if ($sb) { 'Включен (OK)' } else { 'Выключен' })"
     } catch {
-        $TxtSecureBoot.Text = "Secure Boot: Legacy/Не поддерживается"
+        $TxtSecureBoot.Text = "Secure Boot: Legacy / Не поддерживается"
     }
 
     $TxtStatusBar.Text = "Характеристики ПК успешно обновлены."
 })
 
-# Запуск первичного сканирования при старте
-$window.Add_ContentRendered({
-    $BtnScanHardware.RaiseEvent((New-Object System.Windows.RoutedEventArgs($Button.ClickEvent)))
-})
-
-# Проверка IP, страны и города
-$BtnCheckIp.Add_Click({$TxtStatusBar.Text = "Запрос информации о соединении..."
+# Проверка IP
+$BtnCheckIp.Add_Click({$TxtStatusBar.Text = "Определение IP и геолокации..."
     try {
         $ipInfo = Invoke-RestMethod -Uri "https://ipapi.co/json/" -TimeoutSec 5
         $TxtIp.Text = "IP: $($ipInfo.ip)"
         $TxtLocation.Text = "Локация: $($ipInfo.country_name), $($ipInfo.city)"
         $TxtIsp.Text = "Провайдер: $($ipInfo.org)"
-        $TxtStatusBar.Text = "Сетевая информация обновлена."
+        $TxtStatusBar.Text = "Данные сети успешно получены."
     } catch {
-        $TxtStatusBar.Text = "Не удалось связаться с сервером проверки IP."
+        $TxtStatusBar.Text = "Ошибка соединения с сервисом IP."
     }
 })
 
-# Тест скорости с поддержкой остановки
-$BtnStartSpeed.Add_Click({$script:SpeedTestCancelled = $false$BtnStartSpeed.IsEnabled = $false$BtnStopSpeed.IsEnabled = $true$PbSpeed.IsIndeterminate = $true$TxtSpeed.Text = "Тестирование скорости загрузки..."
-    $TxtStatusBar.Text = "Идет замер скорости..."
+# Замер скорости
+$BtnStartSpeed.Add_Click({$script:SpeedTestCancelled = $false$BtnStartSpeed.IsEnabled = $false$BtnStopSpeed.IsEnabled = $true$PbSpeed.IsIndeterminate = $true$TxtSpeed.Text = "Загрузка тестового блока..."
+    $TxtStatusBar.Text = "Тестирование скорости..."
 
-    # Асинхронный замер через фоновый поток
-    $testUrl = "https://speed.cloudflare.com/__down?bytes=50000000" # 50 Мб файл Cloudflare
+    $testUrl = "https://speed.cloudflare.com/__down?bytes=50000000"
     $tempFile = "$env:TEMP\speedtest_tmp.dat"
 
-    $wc = New-Object System.Net.WebClient
-    $stopwatch = New-Object System.Diagnostics.Stopwatch
+    $script:WebClient = New-Object System.Net.WebClient
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
-    $BtnStopSpeed.Add_Click({$script:SpeedTestCancelled = $true$wc.CancelAsync()
-    })
-
-    $stopwatch.Start()
     try {
-        $task =$wc.DownloadFileTaskAsync($testUrl,$tempFile)
-        
+        $task =$script:WebClient.DownloadFileTaskAsync($testUrl,$tempFile)
         while (-not $task.IsCompleted) {
-            if ($script:SpeedTestCancelled) { break }
-            [System.Windows.Forms.Application]::DoEvents()
+            if ($script:SpeedTestCancelled) { 
+                break 
+            }
+            [System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke([Action]{}, [System.Windows.Threading.DispatcherPriority]::Background)
             Start-Sleep -Milliseconds 100
         }
 
@@ -402,26 +369,37 @@ $BtnStartSpeed.Add_Click({$script:SpeedTestCancelled = $false$BtnStartSpeed.IsEn
         $PbSpeed.IsIndeterminate =$false
 
         if ($script:SpeedTestCancelled) {$TxtSpeed.Text = "Замер скорости отменен."
-            $TxtStatusBar.Text = "Тест скорости остановлен пользователем."
+            $TxtStatusBar.Text = "Тест скорости остановлен."
         } else {
             $fileSizeBits = (Get-Item$tempFile).Length * 8
             $seconds =$stopwatch.Elapsed.TotalSeconds
             $mbps = [math]::Round(($fileSizeBits / $seconds) / 1Mb, 2)
-
             $TxtSpeed.Text = "Скорость загрузки: $mbps Mbps"
-            $TxtStatusBar.Text = "Тест завершен: $mbps Mbps"
+            $TxtStatusBar.Text = "Тест скорости завершен."
         }
     } catch {
         $PbSpeed.IsIndeterminate = $false$TxtSpeed.Text = "Ошибка замера или отмена."
     } finally {
-        if (Test-Path $tempFile) { Remove-Item $tempFile -Force -ErrorAction SilentlyContinue }$BtnStartSpeed.IsEnabled = $true$BtnStopSpeed.IsEnabled = $false$wc.Dispose()
+        if (Test-Path $tempFile) { 
+            Remove-Item $tempFile -Force -ErrorAction SilentlyContinue 
+        }
+        $BtnStartSpeed.IsEnabled =$true
+        $BtnStopSpeed.IsEnabled =$false
+        if ($script:WebClient) {$script:WebClient.Dispose() 
+        }
+    }
+})
+
+$BtnStopSpeed.Add_Click({
+    $script:SpeedTestCancelled =$true
+    if ($script:WebClient) {$script:WebClient.CancelAsync()
     }
 })
 
 # Установка ПО
 function Install-AppWinget ($id,$name) {
-    $TxtStatusBar.Text = "Установка $name через Winget..."
-    Start-Process powershell -ArgumentList "-NoProfile -Command `"winget install --id $id -e --silent --accept-package-agreements --accept-source-agreements; pause`""
+    $TxtStatusBar.Text = "Запуск установки $name..."
+    Start-Process powershell.exe -ArgumentList "-NoProfile -Command `"winget install --id $id -e --silent --accept-package-agreements --accept-source-agreements; Write-Host 'Завершено!'; Start-Sleep -Seconds 2`""
 }
 
 $BtnInstallVSCode.Add_Click({ Install-AppWinget "Microsoft.VisualStudioCode" "VS Code" })
@@ -430,20 +408,22 @@ $BtnInstallDiscord.Add_Click({ Install-AppWinget "Discord.Discord" "Discord" })
 $BtnInstallTelegram.Add_Click({ Install-AppWinget "Telegram.TelegramDesktop" "Telegram" })
 $BtnInstallRiot.Add_Click({ Install-AppWinget "RiotGames.RiotClient" "Riot Client" })
 
-# Установка qBittorrent по предоставленной ссылке
-$BtnInstallQBit.Add_Click({$TxtStatusBar.Text = "Загрузка qBittorrent с SourceForge..."
+$BtnInstallQBit.Add_Click({$TxtStatusBar.Text = "Скачивание qBittorrent..."
     $url = "https://sourceforge.net/projects/qbittorrent/files/latest/download"
     $outFile = "$env:TEMP\qbittorrent_setup.exe"
-
     try {
-        # Загрузка инсталлятора
         Invoke-WebRequest -Uri $url -OutFile$outFile -UserAgent "Mozilla/5.0"
-        $TxtStatusBar.Text = "Запуск установщика qBittorrent..."
+        $TxtStatusBar.Text = "Запуск инсталлятора qBittorrent..."
         Start-Process -FilePath $outFile
     } catch {
-        $TxtStatusBar.Text = "Ошибка загрузки qBittorrent. Проверьте сеть."
+        $TxtStatusBar.Text = "Не удалось загрузить qBittorrent."
     }
 })
 
-# Показ окна
+# Первоначальный опрос железа при показе окна
+$window.Add_ContentRendered({
+    $BtnScanHardware.RaiseEvent((New-Object System.Windows.RoutedEventArgs($Button.ClickEvent)))
+})
+
+# Отображение окна
 $window.ShowDialog() | Out-Null
